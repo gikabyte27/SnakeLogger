@@ -28,7 +28,6 @@ function scheduleMail($MinutesInterval=60) {
         $now = Get-Date
         $SecondsInterval = $MinutesInterval * 60
         $nextInterval = $now.AddMinutes($Interval - ($now.Minute % $MinutesInterval))
-        echo $TotalSeconds
         Start-Sleep -Seconds ($nextInterval - $now).TotalSeconds
         while ($true) {
             sendMail
