@@ -16,13 +16,14 @@ $$\   $$ |$$ |\$$$ |$$ |  $$ |$$ |\$$\  $$ |      $$ |     $$ |  $$ |$$ |  $$ |$
 ---
 ## Overview
 
-This project will focus on a **keylogger** creation. This keylogger will synchronously send the keystrokes at certain times. This will act as as a module towards building a **RAT** (Soon) 
+The project features as they were planned have been completed - with a successful **keylogger** creation. This keylogger asynchronously sends keystrokes at certain times via SMTP protocol as an attached text file, accompanied by a preview of the file within the mail body. This will act as as a module towards building a **RAT** (Soon) 
 
 ## Components
 
 - Script generator
 - PowerShell core keylogger payload
 - Log File sending via e-mail
+- Log File as attachment within the e-mail
 
 ## Further work
 
