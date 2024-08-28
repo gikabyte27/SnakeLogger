@@ -1,5 +1,5 @@
 # SnakeLogger
-A (not so simple) simple keylogger malware
+A (not so) simple keylogger malware
 > George Tudor | 27/07/2024
 
 ---
