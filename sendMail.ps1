@@ -64,7 +64,6 @@ function SendMail {
         $TempFileName = "log_$LogFileName"
         $TempFile = [System.IO.Path]::Combine($LogFileDir, $TempFileName)
 
-        $LogFileSize = (Get-Item $TempFile).Length
         $MailMessage = New-Object System.Net.Mail.MailMessage
         $MailMessage.From = $Email
         $MailMessage.To.Add($Email)
@@ -77,6 +76,8 @@ function SendMail {
                 $SMTPClient.Send($MailMessage)
             } catch {
             } finally {
+                
+                $Attachment.Dispose()
                 # Clean up temporary file
                 if (Test-Path $TempFile) {
                     Remove-Item -Path $TempFile -Force
